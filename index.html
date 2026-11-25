@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>외향성 알아보기 — 수업 시연</title>
+<!-- 구조(HTML): 화면에 무엇이 있는지. 모양은 style.css, 동작은 app.js가 맡는다. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <span class="topbar__title">외향성 알아보기</span>
+  <span class="topbar__user" id="user-box" hidden>
+    <span id="user-name"></span>
+    <button class="btn btn--small" type="button" id="logout">로그아웃</button>
+  </span>
+</header>
+
+<main class="page">
+
+  <!-- 1. 시작·동의 화면 -->
+  <section id="screen-start" hidden>
+    <div class="card">
+      <h1>나는 얼마나 외향적일까?</h1>
+      <p>강원대학교 대학원 심리학과 ‘심리측정 웹서비스 사전과정’ 수업에서 웹서비스가 어떻게 작동하는지 보여주기 위한 시연 페이지입니다. 10문항, 약 3분 걸립니다.</p>
+
+      <div id="logged-in-start" hidden>
+        <p class="note note--ok"><b id="start-username"></b>님으로 로그인되어 있어요.</p>
+        <div class="btn-row">
+          <button class="btn btn--primary" type="button" id="start-logged">응답 시작</button>
+          <button class="btn" type="button" data-go="history">내 지난 결과</button>
+        </div>
+      </div>
+
+      <div id="consent-block">
+        <h2>개인정보 수집·이용 안내</h2>
+        <dl class="consent">
+          <dt>목적</dt><dd>수업 중 웹서비스 작동 방식 시연. 연구에 쓰지 않으며, 진단이 아닙니다.</dd>
+          <dt>수집·생성 항목</dt><dd>아이디(별명), 비밀번호(해시로만 저장), 10문항 응답, 점수, 동의 시각, 로그인 유지 기록. 이메일·실명·학번·나이·성별은 받지 않습니다.</dd>
+          <dt>저장·처리 위치</dt><dd>응답 저장: Supabase 서울 리전 · 서버 처리: Vercel 서버 함수 서울(icn1). 화면 파일은 Vercel의 전 세계 전송망(CDN)으로 전달됩니다.</dd>
+          <dt>공개 범위</dt><dd>개인 응답과 아이디는 누구에게도 보여주지 않습니다. 반 전체 분포는 진행자가 응답을 마감한 뒤, 5건 이상일 때만 보여줍니다.</dd>
+          <dt>보관 기간</dt><dd>워크숍 종료 후 7일 안에 모두 삭제합니다.</dd>
+          <dt>동의를 거부할 권리</dt><dd>동의하지 않아도 됩니다. 동의하지 않으면 아래 ‘저장 없이 체험하기’로 같은 문항에 답하고 내 점수를 볼 수 있습니다(응답이 서버로 전송되지 않으며, 반 분포는 볼 수 없음). 수업 참여에 불이익은 없습니다.</dd>
+          <dt>문의</dt><dd>워크숍 진행자</dd>
+        </dl>
+        <label class="check"><input type="checkbox" id="consent"> 위 내용을 읽었고, 응답 저장에 동의합니다.</label>
+        <div class="btn-row">
+          <button class="btn btn--primary btn--block" type="button" id="start-consented" disabled>동의하고 시작</button>
+          <button class="btn btn--block" type="button" id="start-nosave">동의하지 않고 저장 없이 체험하기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 가입·로그인 화면 -->
+  <section id="screen-auth" hidden>
+    <div class="card">
+      <div class="switch" role="tablist">
+        <button type="button" role="tab" id="tab-signup" aria-selected="true">처음이에요(가입)</button>
+        <button type="button" role="tab" id="tab-login" aria-selected="false">로그인</button>
+      </div>
+      <form id="auth-form" novalidate>
+        <label class="field"><span class="field__label">아이디</span>
+          <input type="text" id="username" autocomplete="username" placeholder="영문·숫자 4–20자 (학번·실명 말고 별명)"></label>
+        <label class="field"><span class="field__label">비밀번호</span>
+          <input type="password" id="password" autocomplete="new-password" placeholder="8자 이상"></label>
+        <p class="small muted">비밀번호 찾기는 없어요(이메일을 받지 않기 때문). 잊지 않을 비밀번호로 정해 주세요.</p>
+        <p class="note note--error" id="auth-error" role="alert" hidden></p>
+        <button class="btn btn--primary btn--block" type="submit" id="auth-submit">가입하고 시작</button>
+      </form>
+      <div id="guest-block" hidden>
+        <p class="small muted" style="margin-top:16px">가입이 어려우면 진행자가 열어 둔 게스트 응답을 쓸 수 있어요.</p>
+        <button class="btn btn--block" type="button" id="start-guest">가입 없이 응답하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 문항 화면 — 한 화면에 한 문항 -->
+  <section id="screen-items" hidden>
+    <div class="progress">
+      <div class="progress__text"><span id="progress-count">1 / 10</span><span id="mode-label"></span></div>
+      <div class="progress__bar"><div class="progress__fill" id="progress-fill"></div></div>
+    </div>
+    <p class="small muted" id="instruction"></p>
+    <p class="item__text" id="item-text"></p>
+    <div class="options" id="options"></div>
+    <div class="btn-row">
+      <button class="btn" type="button" id="prev">이전</button>
+      <button class="btn btn--primary" type="button" id="finish" disabled>결과 보기</button>
+    </div>
+    <p class="note note--error" id="submit-error" role="alert" hidden></p>
+  </section>
+
+  <!-- 4. 결과 화면 -->
+  <section id="screen-result" hidden>
+    <div class="card">
+      <p class="muted small">내 외향성 점수 (1–5)</p>
+      <p class="score" id="my-score"></p>
+      <p class="small muted" id="score-check"></p>
+      <p>외향성은 사람들과 어울리며 활력을 얻고, 말하고 나서는 것을 편하게 느끼는 정도를 말합니다. 점수가 높다고 좋거나 낮다고 나쁜 것이 아니며, 상황에 따라 달라질 수 있습니다.</p>
+      <p class="note">이 결과는 진단이 아닙니다. 타당화되지 않은 시연용 번역이라 정확한 측정으로 쓸 수 없습니다.</p>
+    </div>
+    <div class="card">
+      <h2>우리 반 분포</h2>
+      <div id="class-dist"></div>
+      <button class="btn btn--small" type="button" id="refresh-stats">새로고침</button>
+    </div>
+    <p class="note note--warn" id="guest-notice" hidden>가입 없이 응답한 결과는 다시 볼 수 없어요. 필요하면 지금 화면을 캡처해 두세요.</p>
+    <p class="note" id="nosave-notice" hidden>저장 없이 체험한 결과예요. 점수는 이 브라우저(app.js)가 계산했고 서버로 보내지 않았어요.</p>
+    <div class="btn-row">
+      <button class="btn" type="button" data-go="history" id="to-history" hidden>내 지난 결과</button>
+      <button class="btn" type="button" data-go="start">처음으로</button>
+    </div>
+  </section>
+
+  <!-- 5. 지난 결과 -->
+  <section id="screen-history" hidden>
+    <div class="card">
+      <h2>내 지난 결과</h2>
+      <ul class="history" id="history-list"></ul>
+      <div class="btn-row"><button class="btn" type="button" data-go="start">처음으로</button></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  문항 출처: International Personality Item Pool(ipip.ori.org), Goldberg(1992) — 시연용 한국어 번역. 교육용 시연 코드이며 실서비스용 인증 구현이 아닙니다.
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

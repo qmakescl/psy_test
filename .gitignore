@@ -1,0 +1,12 @@
+# 비밀값 — 절대 커밋하지 않는다
+.env
+.env.*
+!.env.example
+.vercel/
+
+node_modules/
+.DS_Store
+
+# 응답 데이터 파일은 올리지 않는다. 합성 실습 파일 하나만 예외.
+*.csv
+!data/sample_practice.csv
